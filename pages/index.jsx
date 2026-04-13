@@ -163,6 +163,10 @@ export default function AlertDrafter() {
               style={{ flex: 2, background: gold, color: dark, borderRadius: "2px", padding: "15px 20px", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontFamily: "Georgia, serif", fontWeight: "700", textAlign: "center", textDecoration: "none", display: "block" }}>
               ✉ Open in Gmail
             </a>
+            <a href={`mailto:${dl.split(/[\s,;]+/).filter(Boolean).join(",")}?subject=${encodeURIComponent(getSubject(draft))}&body=${encodeURIComponent(getBody(draft))}`} target="_blank" rel="noreferrer"
+              style={{ flex: 2, background: "transparent", color: gold, border: `1px solid ${gold}`, borderRadius: "2px", padding: "15px 20px", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontFamily: "Georgia, serif", fontWeight: "700", textAlign: "center", textDecoration: "none", display: "block" }}>
+              ✉ Open in Outlook
+            </a>
             <button onClick={handleCopy} style={{ flex: 1, background: "transparent", color: copied ? gold : textDim, border: `1px solid ${copied ? gold : border}`, borderRadius: "2px", padding: "15px", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontFamily: "Georgia, serif", cursor: "pointer" }}>
               {copied ? "✓ Copied" : "Copy"}
             </button>
