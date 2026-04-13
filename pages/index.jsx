@@ -174,7 +174,7 @@ export default function AlertDrafter() {
               ↩ New
             </button>
           </div>
-          <div style={{ fontSize: "12px", color: textDim, fontStyle: "italic", marginTop: "10px", textAlign: "center" }}>"Open in Gmail" pre-fills subject, body & recipient — just hit Send!</div>
+          <div style={{ fontSize: "12px", color: textDim, fontStyle: "italic", marginTop: "10px", textAlign: "center" }}>"Open in Gmail or Outlook" pre-fills subject, body & recipient — just hit Send!</div>
         </div>
       )}
     </div>
