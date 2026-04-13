@@ -150,9 +150,9 @@ export default function AlertDrafter() {
 
           <div style={{ background: card, border: `1px solid ${border}`, borderTop: "none", borderRadius: "0 0 4px 4px", padding: "26px" }}>
             <div style={{ fontSize: "10px", color: gold, letterSpacing: "3px", textTransform: "uppercase", marginBottom: "20px" }}>Email Body</div>
-            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2 }}><strong>Date:</strong> {draft.date}</div>
-            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2 }}><strong>Publication:</strong> {draft.publication}</div>
-            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2 }}><strong>Author:</strong> {draft.author}</div>
+            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2, fontWeight: "700" }}>Date: {draft.date}</div>
+            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2, fontWeight: "700" }}>Publication: {draft.publication}</div>
+            <div style={{ fontFamily: "monospace", fontSize: "13px", color: textDim, lineHeight: 2, fontWeight: "700" }}>Author: {draft.author}</div>
             <div style={{ fontFamily: "monospace", fontSize: "13px", color: gold, lineHeight: 2, marginBottom: "20px", wordBreak: "break-all" }}>{draft.url}</div>
             <div style={{ fontSize: "17px", fontWeight: "700", color: textLight, marginBottom: "20px", lineHeight: 1.4 }}>{draft.headline}</div>
             <div style={{ fontSize: "14px", color: textMid, lineHeight: 1.9, maxHeight: "320px", overflowY: "auto", whiteSpace: "pre-wrap", paddingRight: "8px" }}>{draft.body}</div>
