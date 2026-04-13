@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const DEFAULT_DL = "writetodharshan@gmail.com";
+const DEFAULT_DL = "";
 
 function getGmailLink(dl, subject, body) {
   const to = dl
