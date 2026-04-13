@@ -1,18 +1,16 @@
-import { useState } from "react";
-
-const DL = ["writetodharshan@gmail.com"];
-
-function getGmailLink(subject, body) {
-  const to = DL.join(",");
-  return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
+import { useState, useRef, useEffect } from "react";
 
 export default function AlertDrafter() {
   const [url, setUrl] = useState("");
+  const [dlInput, setDlInput] = useState("");
+  const [dlList, setDlList] = useState([]);
+  const [dlError, setDlError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const [draft, setDraft] = useState(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef(null);
 
   const gold = "#c8a96e";
   const dark = "#0a0a0f";
@@ -21,13 +19,37 @@ export default function AlertDrafter() {
   const textDim = "#8a8070";
   const textMid = "#a09888";
   const textLight = "#f5f0e8";
+  const textFaint = "#334155";
+
+  // Email helpers
+  const parseEmails = (raw) => raw.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+  const validateEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+  const addEmails = () => {
+    const parsed = parseEmails(dlInput);
+    const invalid = parsed.filter(e => !validateEmail(e));
+    if (invalid.length) { setDlError("Invalid: " + invalid.join(", ")); return; }
+    if (!parsed.length) { setDlError("Please enter at least one email."); return; }
+    setDlList(dl => [...new Set([...dl, ...parsed])]);
+    setDlInput("");
+    setDlError("");
+  };
+
+  const removeEmail = (email) => setDlList(dl => dl.filter(e => e !== email));
+  const handleDlKey = (e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addEmails(); } };
+
+  // Cleanup timer
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   const handleDraft = async () => {
     if (!url.trim()) return;
+    if (!dlList.length) { setError("Please add at least one email to the distribution list."); return; }
     setLoading(true);
     setDraft(null);
     setError("");
     setCopied(false);
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
     try {
       const res = await fetch("/api/draft", {
         method: "POST",
@@ -40,11 +62,18 @@ export default function AlertDrafter() {
     } catch (e) {
       setError(e.message);
     }
+    clearInterval(timerRef.current);
+    timerRef.current = null;
     setLoading(false);
   };
 
   const getSubject = (d) => `${d.publication}: ${d.headline}`;
   const getBody = (d) => `Date: ${d.date}\nPublication: ${d.publication}\nAuthor: ${d.author}\n${d.url}\n\n${d.headline}\n\n${d.body}`;
+
+  function getGmailLink(subject, body) {
+    const to = dlList.join(",");
+    return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
 
   const handleCopy = () => {
     if (!draft) return;
@@ -80,11 +109,11 @@ export default function AlertDrafter() {
             <input
               type="text" value={url}
               onChange={e => setUrl(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleDraft()}
+              onKeyDown={e => e.key === "Enter" && url.trim() && dlList.length && handleDraft()}
               placeholder="https://..."
               style={{ flex: 1, minWidth: "220px", background: dark, border: `1px solid ${border}`, borderRadius: "2px", padding: "14px 16px", color: "#e8e4dc", fontSize: "14px", fontFamily: "monospace", outline: "none" }}
             />
-            <button onClick={handleDraft} disabled={loading || !url.trim()} style={{ background: loading || !url.trim() ? border : gold, color: loading || !url.trim() ? textDim : dark, border: "none", borderRadius: "2px", padding: "14px 28px", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontFamily: "Georgia, serif", fontWeight: "700", cursor: loading || !url.trim() ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
+            <button onClick={handleDraft} disabled={loading || !url.trim() || !dlList.length} style={{ background: loading || !url.trim() || !dlList.length ? border : gold, color: loading || !url.trim() || !dlList.length ? textDim : dark, border: "none", borderRadius: "2px", padding: "14px 28px", fontSize: "11px", letterSpacing: "2px", textTransform: "uppercase", fontFamily: "Georgia, serif", fontWeight: "700", cursor: loading || !url.trim() || !dlList.length ? "not-allowed" : "pointer", whiteSpace: "nowrap" }}>
               {loading ? "Fetching..." : "Draft Alert"}
             </button>
           </div>
@@ -92,7 +121,9 @@ export default function AlertDrafter() {
           {loading && (
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
               <div style={{ width: "16px", height: "16px", border: `2px solid ${border}`, borderTop: `2px solid ${gold}`, borderRadius: "50%", animation: "spin 0.8s linear infinite", flexShrink: 0 }} />
-              <span style={{ fontSize: "13px", color: textDim, fontStyle: "italic" }}>Fetching full article and drafting alert...</span>
+              <span style={{ fontSize: "13px", color: textDim, fontStyle: "italic" }}>
+                {elapsed < 10 ? "Fetching article..." : elapsed < 25 ? "Extracting content..." : "Almost done..."} {elapsed}s
+              </span>
             </div>
           )}
 
@@ -100,9 +131,35 @@ export default function AlertDrafter() {
             <div style={{ background: "#1a0f0f", border: "1px solid #4a2020", borderRadius: "3px", padding: "14px 18px", color: "#c87070", fontSize: "13px", marginBottom: "20px" }}>⚠ {error}</div>
           )}
 
+          {/* Editable Distribution List */}
           <div style={{ padding: "14px 18px", background: dark, borderLeft: `2px solid ${gold}` }}>
-            <div style={{ fontSize: "10px", color: textDim, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "8px" }}>Distribution List</div>
-            {DL.map(e => <div key={e} style={{ fontSize: "13px", color: textMid, fontFamily: "monospace" }}>{e}</div>)}
+            <div style={{ fontSize: "10px", color: textDim, letterSpacing: "2px", textTransform: "uppercase", marginBottom: "10px" }}>Distribution List</div>
+            <div style={{ display: "flex", gap: "8px", marginBottom: dlList.length ? "10px" : "0" }}>
+              <input
+                type="text"
+                value={dlInput}
+                onChange={e => { setDlInput(e.target.value); setDlError(""); }}
+                onKeyDown={handleDlKey}
+                placeholder="name@email.com, another@email.com..."
+                style={{ flex: 1, background: card, border: `1px solid ${dlError ? "#c87070" : border}`, borderRadius: "2px", padding: "10px 12px", color: "#e8e4dc", fontSize: "12px", fontFamily: "monospace", outline: "none" }}
+              />
+              <button onClick={addEmails}
+                style={{ background: "transparent", border: `1px solid ${gold}55`, color: gold, borderRadius: "2px", padding: "10px 14px", fontSize: "10px", letterSpacing: "1px", fontFamily: "monospace", cursor: "pointer", whiteSpace: "nowrap" }}>
+                + Add
+              </button>
+            </div>
+            {dlError && <div style={{ fontSize: "10px", color: "#c87070", fontFamily: "monospace", marginBottom: "8px" }}>⚠ {dlError}</div>}
+            {dlList.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {dlList.map(e => (
+                  <div key={e} style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(200,169,110,0.1)", border: `1px solid ${gold}44`, borderRadius: "20px", padding: "3px 10px", fontSize: "11px", color: gold, fontFamily: "monospace" }}>
+                    {e}
+                    <button onClick={() => removeEmail(e)} style={{ background: "none", border: "none", color: textDim, cursor: "pointer", fontSize: "13px", lineHeight: 1, padding: "0 0 0 4px" }}>x</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {dlList.length === 0 && <div style={{ fontSize: "10px", color: textFaint, fontFamily: "monospace", fontStyle: "italic" }}>No recipients added yet</div>}
           </div>
         </div>
       )}
@@ -112,6 +169,16 @@ export default function AlertDrafter() {
           <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "4px 4px 0 0", padding: "20px 26px", borderBottom: `1px solid ${gold}44` }}>
             <div style={{ fontSize: "10px", color: gold, letterSpacing: "3px", textTransform: "uppercase", marginBottom: "8px" }}>Subject</div>
             <div style={{ fontSize: "15px", color: textLight, fontWeight: "600", lineHeight: 1.4 }}>{getSubject(draft)}</div>
+          </div>
+
+          {/* To section showing recipients */}
+          <div style={{ background: card, border: `1px solid ${border}`, borderTop: "none", padding: "16px 26px", borderBottom: `1px solid ${border}` }}>
+            <div style={{ fontSize: "10px", color: gold, letterSpacing: "3px", textTransform: "uppercase", marginBottom: "10px" }}>To</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {dlList.map(e => (
+                <div key={e} style={{ background: "rgba(200,169,110,0.1)", border: `1px solid ${gold}44`, borderRadius: "20px", padding: "3px 10px", fontSize: "11px", color: gold, fontFamily: "monospace" }}>{e}</div>
+              ))}
+            </div>
           </div>
 
           <div style={{ background: card, border: `1px solid ${border}`, borderTop: "none", borderRadius: "0 0 4px 4px", padding: "26px" }}>
